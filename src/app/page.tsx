@@ -239,13 +239,23 @@ export default function Home() {
         padding: 40px;
         box-sizing: border-box;
       `;
-      // Remove overflow constraints from all children in the clone
+      // Fix ALL children in the clone:
+      // 1. Reset framer-motion initial styles (opacity:0, transforms) so all content is visible
+      // 2. Remove overflow constraints so tables aren't clipped
+      // 3. Remove max-height limits
       clone.querySelectorAll<HTMLElement>('*').forEach((el) => {
-        const s = window.getComputedStyle(el);
-        if (s.overflowX === 'auto' || s.overflowX === 'scroll') {
-          el.style.overflowX = 'visible';
-          el.style.width = '100%';
-          el.style.maxWidth = 'none';
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+        el.style.visibility = 'visible';
+        el.style.maxHeight = 'none';
+        el.style.overflow = 'visible';
+        el.style.overflowX = 'visible';
+        el.style.overflowY = 'visible';
+        el.style.maxWidth = 'none';
+        // Ensure nothing is display:none or hidden
+        const computed = window.getComputedStyle(el);
+        if (computed.display === 'none') {
+          el.style.display = 'block';
         }
       });
       // Remove external images from clone (CORS)
