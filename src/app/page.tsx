@@ -216,11 +216,36 @@ export default function Home() {
 
       const node = resultsRef.current;
 
-      // Use scrollWidth/scrollHeight to capture ALL content, not just the visible portion
-      const width = node.scrollWidth;
-      const height = node.scrollHeight;
+      // Temporarily expand all overflow-x-auto children so the full table is captured
+      const overflowEls = Array.from(
+        node.querySelectorAll<HTMLElement>('*')
+      ).filter((el) => {
+        const s = window.getComputedStyle(el);
+        return s.overflowX === 'auto' || s.overflowX === 'scroll';
+      });
 
-      // Filter out cross-origin <img> elements to prevent CORS canvas tainting errors
+      const origStyles: { el: HTMLElement; overflow: string; width: string; maxWidth: string }[] = [];
+      overflowEls.forEach((el) => {
+        origStyles.push({
+          el,
+          overflow: el.style.overflowX,
+          width: el.style.width,
+          maxWidth: el.style.maxWidth,
+        });
+        el.style.overflowX = 'visible';
+        el.style.width = `${el.scrollWidth}px`;
+        el.style.maxWidth = 'none';
+      });
+
+      // Also expand the container itself to its full scroll width
+      const origContainerWidth = node.style.width;
+      const origContainerMaxWidth = node.style.maxWidth;
+      const fullWidth = node.scrollWidth;
+      const fullHeight = node.scrollHeight;
+      node.style.width = `${fullWidth}px`;
+      node.style.maxWidth = 'none';
+
+      // Filter out cross-origin <img> elements to prevent CORS canvas tainting
       const filter = (domNode: HTMLElement) => {
         if (domNode.tagName === 'IMG') {
           const src = (domNode as HTMLImageElement).src || '';
@@ -237,23 +262,24 @@ export default function Home() {
       const imgData = await toPng(node, {
         pixelRatio: 2,
         backgroundColor: '#ffffff',
-        width,
-        height,
-        style: {
-          // Temporarily expand to full content width so nothing is clipped
-          width: `${width}px`,
-          height: `${height}px`,
-          overflow: 'visible',
-        },
+        width: fullWidth,
+        height: fullHeight,
         filter: filter as (node: Node) => boolean,
       });
 
-      // Landscape PDF if content is wider than tall, otherwise portrait
-      const orientation = width > height ? 'l' : 'p';
-      const pdfWidth = orientation === 'l' ? 297 : 210; // A4 landscape or portrait (mm)
-      const pdfHeight = (height * pdfWidth) / width;
+      // Restore original styles
+      origStyles.forEach(({ el, overflow, width, maxWidth }) => {
+        el.style.overflowX = overflow;
+        el.style.width = width;
+        el.style.maxWidth = maxWidth;
+      });
+      node.style.width = origContainerWidth;
+      node.style.maxWidth = origContainerMaxWidth;
 
-      const customPdf = new jsPDF(orientation, 'mm', [pdfWidth, pdfHeight]);
+      const pdfWidth = 297; // A4 landscape width in mm (wider = better for comparison tables)
+      const pdfHeight = (fullHeight * pdfWidth) / fullWidth;
+
+      const customPdf = new jsPDF('l', 'mm', [pdfWidth, pdfHeight]);
       customPdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       customPdf.save('ModelMatch-Results.pdf');
     } catch (err: unknown) {
@@ -263,6 +289,7 @@ export default function Home() {
       setIsDownloadingPdf(false);
     }
   };
+
 
 
 
