@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import { ClientRecommendationResult, SearchOptions } from "@/lib/types";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { WorkflowDiagram } from "@/components/WorkflowDiagram";
 import {
@@ -17,7 +19,7 @@ import {
   Shield, Brain, Layers3, BarChart3, CheckCircle,
   Code2, Palette, FileText, Mic2, TrendingUp,
   SlidersHorizontal, ChevronDown, ArrowRight, Search,
-  Database, Globe, Activity, Check, LogOut, LogIn
+  Database, Globe, Activity, Check, LogOut, LogIn, Download
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -126,6 +128,8 @@ export default function Home() {
   const [history, setHistory] = useState<HistoryDocument[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const resultsRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState<SearchOptions>({
     budget: "", skillLevel: "", timeline: "", goal: "", teamSize: "",
   });
@@ -203,6 +207,33 @@ export default function Home() {
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault(); setResult(null);
     setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 100);
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!resultsRef.current) return;
+    try {
+      setIsDownloadingPdf(true);
+      const canvas = await html2canvas(resultsRef.current, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      // If the content is taller than one page, jsPDF addImage handles it by scaling or we can leave it as one long page,
+      // but 'a4' has fixed height. It's usually fine for 1-2 pages if we just let it crop or scale.
+      // A common simple approach is to just insert it and let it flow off the page, but users prefer seeing all of it.
+      // So we can adjust page height to match the canvas if we want it in a single page PDF.
+      const customPdf = new jsPDF('p', 'mm', [pdfWidth, pdfHeight]);
+      customPdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      customPdf.save('ModelMatch-Results.pdf');
+    } catch (err) {
+      console.error("PDF generation failed", err);
+    } finally {
+      setIsDownloadingPdf(false);
+    }
   };
 
   return (
@@ -622,9 +653,9 @@ export default function Home() {
             </motion.div>
 
           ) : (
-            <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            <motion.div key="results" ref={resultsRef} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="flex-1 flex flex-col py-10 px-6 max-w-[1200px] mx-auto w-full">
+              className="flex-1 flex flex-col py-10 px-6 max-w-[1200px] mx-auto w-full bg-white">
 
               <div className="flex items-center justify-between mb-8 pb-6 border-b border-[#F1F5F9]">
                 <div>
@@ -638,6 +669,12 @@ export default function Home() {
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 border border-amber-100 text-amber-600 text-xs font-semibold">
                       ⚡ Fast Match
                     </span>
+                  )}
+                  {user && (
+                    <button onClick={handleDownloadPdf} disabled={isDownloadingPdf} className="btn-secondary text-sm flex items-center gap-1.5">
+                      {isDownloadingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                      {isDownloadingPdf ? "Generating..." : "Download PDF"}
+                    </button>
                   )}
                   <button onClick={() => { setResult(null); setPrompt(""); }} className="btn-secondary text-sm">
                     ← New search
