@@ -213,32 +213,44 @@ export default function Home() {
     if (!resultsRef.current) return;
     try {
       setIsDownloadingPdf(true);
-      
+
       const width = resultsRef.current.offsetWidth;
       const height = resultsRef.current.offsetHeight;
-      
+
+      // Filter out cross-origin <img> elements to prevent CORS canvas tainting errors
+      const filter = (node: HTMLElement) => {
+        if (node.tagName === 'IMG') {
+          const src = (node as HTMLImageElement).src || '';
+          try {
+            const url = new URL(src);
+            return url.origin === window.location.origin;
+          } catch {
+            return false;
+          }
+        }
+        return true;
+      };
+
       const imgData = await toPng(resultsRef.current, {
         pixelRatio: 2,
         backgroundColor: '#ffffff',
+        filter: filter as (node: Node) => boolean,
       });
-      
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
+
+      const pdfWidth = 210; // A4 width in mm
       const pdfHeight = (height * pdfWidth) / width;
-      
-      // If the content is taller than one page, jsPDF addImage handles it by scaling or we can leave it as one long page,
-      // but 'a4' has fixed height. It's usually fine for 1-2 pages if we just let it crop or scale.
-      // A common simple approach is to just insert it and let it flow off the page, but users prefer seeing all of it.
-      // So we can adjust page height to match the canvas if we want it in a single page PDF.
+
       const customPdf = new jsPDF('p', 'mm', [pdfWidth, pdfHeight]);
       customPdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       customPdf.save('ModelMatch-Results.pdf');
-    } catch (err) {
-      console.error("PDF generation failed", err);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      console.error("PDF generation failed:", msg, err);
     } finally {
       setIsDownloadingPdf(false);
     }
   };
+
 
   return (
     <div className="flex-1 flex flex-col bg-white text-[#0F172A] w-full min-h-screen">
