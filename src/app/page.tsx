@@ -216,67 +216,66 @@ export default function Home() {
 
       const node = resultsRef.current;
 
-      // Temporarily expand all overflow-x-auto children so the full table is captured
-      const overflowEls = Array.from(
-        node.querySelectorAll<HTMLElement>('*')
-      ).filter((el) => {
+      // Clone the node into a hidden off-screen container with no constraints
+      // so the full content height and width is rendered
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: -9999px;
+        width: 1400px;
+        height: auto;
+        overflow: visible;
+        background: #ffffff;
+        z-index: -1;
+      `;
+      const clone = node.cloneNode(true) as HTMLElement;
+      clone.style.cssText = `
+        width: 1400px;
+        max-width: none;
+        height: auto;
+        overflow: visible;
+        background: #ffffff;
+        padding: 40px;
+        box-sizing: border-box;
+      `;
+      // Remove overflow constraints from all children in the clone
+      clone.querySelectorAll<HTMLElement>('*').forEach((el) => {
         const s = window.getComputedStyle(el);
-        return s.overflowX === 'auto' || s.overflowX === 'scroll';
-      });
-
-      const origStyles: { el: HTMLElement; overflow: string; width: string; maxWidth: string }[] = [];
-      overflowEls.forEach((el) => {
-        origStyles.push({
-          el,
-          overflow: el.style.overflowX,
-          width: el.style.width,
-          maxWidth: el.style.maxWidth,
-        });
-        el.style.overflowX = 'visible';
-        el.style.width = `${el.scrollWidth}px`;
-        el.style.maxWidth = 'none';
-      });
-
-      // Also expand the container itself to its full scroll width
-      const origContainerWidth = node.style.width;
-      const origContainerMaxWidth = node.style.maxWidth;
-      const fullWidth = node.scrollWidth;
-      const fullHeight = node.scrollHeight;
-      node.style.width = `${fullWidth}px`;
-      node.style.maxWidth = 'none';
-
-      // Filter out cross-origin <img> elements to prevent CORS canvas tainting
-      const filter = (domNode: HTMLElement) => {
-        if (domNode.tagName === 'IMG') {
-          const src = (domNode as HTMLImageElement).src || '';
-          try {
-            const url = new URL(src);
-            return url.origin === window.location.origin;
-          } catch {
-            return false;
-          }
+        if (s.overflowX === 'auto' || s.overflowX === 'scroll') {
+          el.style.overflowX = 'visible';
+          el.style.width = '100%';
+          el.style.maxWidth = 'none';
         }
-        return true;
-      };
+      });
+      // Remove external images from clone (CORS)
+      clone.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
+        try {
+          const url = new URL(img.src);
+          if (url.origin !== window.location.origin) img.remove();
+        } catch { img.remove(); }
+      });
 
-      const imgData = await toPng(node, {
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+
+      // Wait a frame for layout to settle
+      await new Promise((r) => requestAnimationFrame(r));
+      await new Promise((r) => requestAnimationFrame(r));
+
+      const fullWidth = clone.scrollWidth;
+      const fullHeight = clone.scrollHeight;
+
+      const imgData = await toPng(clone, {
         pixelRatio: 2,
         backgroundColor: '#ffffff',
         width: fullWidth,
         height: fullHeight,
-        filter: filter as (node: Node) => boolean,
       });
 
-      // Restore original styles
-      origStyles.forEach(({ el, overflow, width, maxWidth }) => {
-        el.style.overflowX = overflow;
-        el.style.width = width;
-        el.style.maxWidth = maxWidth;
-      });
-      node.style.width = origContainerWidth;
-      node.style.maxWidth = origContainerMaxWidth;
+      document.body.removeChild(wrapper);
 
-      const pdfWidth = 297; // A4 landscape width in mm (wider = better for comparison tables)
+      const pdfWidth = 297; // A4 landscape
       const pdfHeight = (fullHeight * pdfWidth) / fullWidth;
 
       const customPdf = new jsPDF('l', 'mm', [pdfWidth, pdfHeight]);
@@ -289,6 +288,7 @@ export default function Home() {
       setIsDownloadingPdf(false);
     }
   };
+
 
 
 
