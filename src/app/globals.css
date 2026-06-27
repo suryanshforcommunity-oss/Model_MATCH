@@ -208,3 +208,36 @@ body {
 @layer base {
   * { @apply border-border; }
 }
+
+/* ── Print Styles (PDF Export) ──────────────────────────────────── */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body, .printable-results {
+    background-color: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Force all overflowing containers to expand so tables aren't cut off */
+  * {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  /* Reset any Framer Motion animations that might be caught mid-state */
+  .printable-results * {
+    opacity: 1 !important;
+    transform: none !important;
+    visibility: visible !important;
+  }
+
+  /* Optional: Adjust print page orientation and margins */
+  @page {
+    size: A4 landscape;
+    margin: 1cm;
+  }
+}

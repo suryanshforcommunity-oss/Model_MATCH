@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import { ClientRecommendationResult, SearchOptions } from "@/lib/types";
-import { toPng } from 'html-to-image';
-import { jsPDF } from "jspdf";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { WorkflowDiagram } from "@/components/WorkflowDiagram";
 import {
@@ -128,8 +126,7 @@ export default function Home() {
   const [history, setHistory] = useState<HistoryDocument[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
-  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const resultsRef = useRef<HTMLDivElement>(null);
+
   const [options, setOptions] = useState<SearchOptions>({
     budget: "", skillLevel: "", timeline: "", goal: "", teamSize: "",
   });
@@ -209,105 +206,15 @@ export default function Home() {
     setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 100);
   };
 
-  const handleDownloadPdf = async () => {
-    if (!resultsRef.current) return;
-    try {
-      setIsDownloadingPdf(true);
-
-      const node = resultsRef.current;
-
-      // Clone the node into a hidden off-screen container with no constraints
-      // so the full content height and width is rendered
-      const wrapper = document.createElement('div');
-      wrapper.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: -9999px;
-        width: 1400px;
-        height: auto;
-        overflow: visible;
-        background: #ffffff;
-        z-index: -1;
-      `;
-      const clone = node.cloneNode(true) as HTMLElement;
-      clone.style.cssText = `
-        width: 1400px;
-        max-width: none;
-        height: auto;
-        overflow: visible;
-        background: #ffffff;
-        padding: 40px;
-        box-sizing: border-box;
-      `;
-      // Fix ALL children in the clone:
-      // 1. Reset framer-motion initial styles (opacity:0, transforms) so all content is visible
-      // 2. Remove overflow constraints so tables aren't clipped
-      // 3. Remove max-height limits
-      clone.querySelectorAll<HTMLElement>('*').forEach((el) => {
-        el.style.opacity = '1';
-        el.style.transform = 'none';
-        el.style.visibility = 'visible';
-        el.style.maxHeight = 'none';
-        el.style.overflow = 'visible';
-        el.style.overflowX = 'visible';
-        el.style.overflowY = 'visible';
-        el.style.maxWidth = 'none';
-        // Ensure nothing is display:none or hidden
-        const computed = window.getComputedStyle(el);
-        if (computed.display === 'none') {
-          el.style.display = 'block';
-        }
-      });
-      // Remove external images from clone (CORS)
-      clone.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
-        try {
-          const url = new URL(img.src);
-          if (url.origin !== window.location.origin) img.remove();
-        } catch { img.remove(); }
-      });
-
-      wrapper.appendChild(clone);
-      document.body.appendChild(wrapper);
-
-      // Wait a frame for layout to settle
-      await new Promise((r) => requestAnimationFrame(r));
-      await new Promise((r) => requestAnimationFrame(r));
-
-      const fullWidth = clone.scrollWidth;
-      const fullHeight = clone.scrollHeight;
-
-      const imgData = await toPng(clone, {
-        pixelRatio: 2,
-        backgroundColor: '#ffffff',
-        width: fullWidth,
-        height: fullHeight,
-      });
-
-      document.body.removeChild(wrapper);
-
-      const pdfWidth = 297; // A4 landscape
-      const pdfHeight = (fullHeight * pdfWidth) / fullWidth;
-
-      const customPdf = new jsPDF('l', 'mm', [pdfWidth, pdfHeight]);
-      customPdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      customPdf.save('ModelMatch-Results.pdf');
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : JSON.stringify(err);
-      console.error("PDF generation failed:", msg, err);
-    } finally {
-      setIsDownloadingPdf(false);
-    }
+  const handleDownloadPdf = () => {
+    window.print();
   };
-
-
-
-
 
   return (
     <div className="flex-1 flex flex-col bg-white text-[#0F172A] w-full min-h-screen">
 
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
-      <header className="w-full h-16 bg-white/90 backdrop-blur-md border-b border-[#F1F5F9] sticky top-0 z-50">
+      <header className="w-full h-16 bg-white/90 backdrop-blur-md border-b border-[#F1F5F9] sticky top-0 z-50 no-print">
         <div className="max-w-[1200px] mx-auto h-full px-6 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <button onClick={() => setResult(null)}
@@ -720,9 +627,9 @@ export default function Home() {
             </motion.div>
 
           ) : (
-            <motion.div key="results" ref={resultsRef} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="flex-1 flex flex-col py-10 px-6 max-w-[1200px] mx-auto w-full bg-white">
+              className="flex-1 flex flex-col py-10 px-6 max-w-[1200px] mx-auto w-full bg-white printable-results">
 
               <div className="flex items-center justify-between mb-8 pb-6 border-b border-[#F1F5F9]">
                 <div>
@@ -738,12 +645,11 @@ export default function Home() {
                     </span>
                   )}
                   {user && (
-                    <button onClick={handleDownloadPdf} disabled={isDownloadingPdf} className="btn-secondary text-sm flex items-center gap-1.5">
-                      {isDownloadingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                      {isDownloadingPdf ? "Generating..." : "Download PDF"}
+                    <button onClick={handleDownloadPdf} className="btn-secondary text-sm flex items-center gap-1.5 no-print">
+                      <Download className="w-4 h-4" /> Download PDF
                     </button>
                   )}
-                  <button onClick={() => { setResult(null); setPrompt(""); }} className="btn-secondary text-sm">
+                  <button onClick={() => { setResult(null); setPrompt(""); }} className="btn-secondary text-sm no-print">
                     ← New search
                   </button>
                 </div>
@@ -857,7 +763,7 @@ export default function Home() {
         </AnimatePresence>
       </div>
 
-      <footer className="w-full border-t border-[#F1F5F9] py-10 mt-10 bg-[#F8FAFC]">
+      <footer className="w-full border-t border-[#F1F5F9] py-10 mt-10 bg-[#F8FAFC] no-print">
         <div className="max-w-[1200px] mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-5">
           <div className="flex items-center gap-2">
             <span className="w-6 h-6 rounded-md bg-[#4F46E5] flex items-center justify-center">
