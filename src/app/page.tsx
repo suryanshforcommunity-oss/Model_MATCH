@@ -214,13 +214,16 @@ export default function Home() {
     try {
       setIsDownloadingPdf(true);
 
-      const width = resultsRef.current.offsetWidth;
-      const height = resultsRef.current.offsetHeight;
+      const node = resultsRef.current;
+
+      // Use scrollWidth/scrollHeight to capture ALL content, not just the visible portion
+      const width = node.scrollWidth;
+      const height = node.scrollHeight;
 
       // Filter out cross-origin <img> elements to prevent CORS canvas tainting errors
-      const filter = (node: HTMLElement) => {
-        if (node.tagName === 'IMG') {
-          const src = (node as HTMLImageElement).src || '';
+      const filter = (domNode: HTMLElement) => {
+        if (domNode.tagName === 'IMG') {
+          const src = (domNode as HTMLImageElement).src || '';
           try {
             const url = new URL(src);
             return url.origin === window.location.origin;
@@ -231,16 +234,26 @@ export default function Home() {
         return true;
       };
 
-      const imgData = await toPng(resultsRef.current, {
+      const imgData = await toPng(node, {
         pixelRatio: 2,
         backgroundColor: '#ffffff',
+        width,
+        height,
+        style: {
+          // Temporarily expand to full content width so nothing is clipped
+          width: `${width}px`,
+          height: `${height}px`,
+          overflow: 'visible',
+        },
         filter: filter as (node: Node) => boolean,
       });
 
-      const pdfWidth = 210; // A4 width in mm
+      // Landscape PDF if content is wider than tall, otherwise portrait
+      const orientation = width > height ? 'l' : 'p';
+      const pdfWidth = orientation === 'l' ? 297 : 210; // A4 landscape or portrait (mm)
       const pdfHeight = (height * pdfWidth) / width;
 
-      const customPdf = new jsPDF('p', 'mm', [pdfWidth, pdfHeight]);
+      const customPdf = new jsPDF(orientation, 'mm', [pdfWidth, pdfHeight]);
       customPdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       customPdf.save('ModelMatch-Results.pdf');
     } catch (err: unknown) {
@@ -250,6 +263,7 @@ export default function Home() {
       setIsDownloadingPdf(false);
     }
   };
+
 
 
   return (
