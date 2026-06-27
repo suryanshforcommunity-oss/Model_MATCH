@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import { ClientRecommendationResult, SearchOptions } from "@/lib/types";
-import html2canvas from "html2canvas";
+import { toCanvas } from 'html-to-image';
 import { jsPDF } from "jspdf";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { WorkflowDiagram } from "@/components/WorkflowDiagram";
@@ -213,8 +213,8 @@ export default function Home() {
     if (!resultsRef.current) return;
     try {
       setIsDownloadingPdf(true);
-      const canvas = await html2canvas(resultsRef.current, {
-        scale: 2,
+      const canvas = await toCanvas(resultsRef.current, {
+        pixelRatio: 2,
         backgroundColor: '#ffffff',
       });
       const imgData = canvas.toDataURL('image/png');
