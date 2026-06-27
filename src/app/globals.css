@@ -1,26 +1,210 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  /* ── Minimal White SaaS Design System ─────────────────────────── */
+  --background:        #FFFFFF;
+  --foreground:        #0F172A;
+
+  --card:              #FFFFFF;
+  --card-foreground:   #0F172A;
+
+  --popover:           #FFFFFF;
+  --popover-foreground: #0F172A;
+
+  /* Indigo primary — used sparingly on CTAs & accents */
+  --primary:           #4F46E5;
+  --primary-foreground: #FFFFFF;
+
+  --secondary:         #F8FAFC;
+  --secondary-foreground: #475569;
+
+  --muted:             #F1F5F9;
+  --muted-foreground:  #64748B;
+
+  /* Emerald for positive indicators / score bars */
+  --accent:            #10B981;
+  --accent-foreground: #FFFFFF;
+
+  --destructive:       #EF4444;
+
+  --border:            #E2E8F0;
+  --input:             #F8FAFC;
+  --ring:              #4F46E5;
+
+  --radius:            0.5rem;   /* 8px — tight, professional */
 }
 
+/* ── Typography utilities ───────────────────────────────────────── */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Inter, sans-serif;
+  background-color: #FFFFFF;
+  color: #0F172A;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Surface card: crisp 1px border, very light shadow ─────────── */
+.s-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.s-card:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.04);
+  transform: translateY(-1px);
+}
+
+/* Accent-outlined variant */
+.s-card-accent {
+  border-color: rgba(79, 70, 229, 0.2);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.06), 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+/* ── Buttons ───────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #FFFFFF;
+  background-color: #4F46E5;
+  border: 1px solid #4338CA;
+  box-shadow: 0 1px 2px rgba(79, 70, 229, 0.25), inset 0 1px 0 rgba(255,255,255,0.1);
+  cursor: pointer;
+  transition: background-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+.btn-primary:hover {
+  background-color: #4338CA;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.2);
+}
+.btn-primary:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  background-color: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, transform 0.1s;
+}
+.btn-secondary:hover {
+  background-color: #F9FAFB;
+  border-color: #9CA3AF;
+  transform: translateY(-1px);
+}
+.btn-secondary:active {
+  transform: translateY(0);
+}
+
+/* ── Input ─────────────────────────────────────────────────────── */
+.s-input {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  color: #0F172A;
+  font-size: 0.9375rem;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.s-input:focus {
+  outline: none;
+  background: #FFFFFF;
+  border-color: #4F46E5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+.s-input::placeholder { color: #94A3B8; }
+
+/* ── Tag / badge ────────────────────────────────────────────────── */
+.s-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: #F1F5F9;
+  color: #64748B;
+  border: 1px solid #E2E8F0;
+}
+
+/* ── Score bar ──────────────────────────────────────────────────── */
+.score-track {
+  height: 6px;
+  background: #F1F5F9;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid #E2E8F0;
+}
+.score-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #4F46E5 0%, #10B981 100%);
+}
+
+/* ── Section divider ────────────────────────────────────────────── */
+.section-rule {
+  border: none;
+  border-top: 1px solid #F1F5F9;
+  margin: 0;
+}
+
+/* ── Stat number ────────────────────────────────────────────────── */
+.stat-number {
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #0F172A;
+  line-height: 1;
+}
+
+@layer base {
+  * { @apply border-border; }
 }

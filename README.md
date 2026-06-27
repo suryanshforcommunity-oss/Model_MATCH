@@ -20,7 +20,22 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Learn More
+## Environment Variables
+
+Create a local `.env.local` file for development and never commit it to source control. Use `.env.example` as a template.
+
+Required variables:
+
+- `OPENAI_API_KEY` — OpenAI API key for the recommendation API.
+- `NEXT_PUBLIC_FIREBASE_API_KEY` — Firebase web API key.
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` — Firebase authentication domain.
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID` — Firebase project ID.
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` — Firebase storage bucket.
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` — Firebase messaging sender ID.
+- `NEXT_PUBLIC_FIREBASE_APP_ID` — Firebase app ID.
+- `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` — Firebase measurement ID.
+
+## Deploy on Vercel
 
 To learn more about Next.js, take a look at the following resources:
 
