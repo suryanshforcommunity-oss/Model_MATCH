@@ -12,15 +12,18 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "",
 };
 
-if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
-  throw new Error(
-    "Missing Firebase configuration. Set NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, and NEXT_PUBLIC_FIREBASE_PROJECT_ID."
-  );
+const hasConfig = !!(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId);
+
+let app: ReturnType<typeof initializeApp> | undefined;
+
+if (typeof window !== "undefined" && hasConfig) {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+} else if (getApps().length > 0) {
+  app = getApps()[0];
+} else {
+  app = undefined;
 }
 
-// Initialize Firebase (prevent double-init in dev hot reload)
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const auth = app ? getAuth(app) : null;
+export const db = app ? getFirestore(app) : null;
 export default app;

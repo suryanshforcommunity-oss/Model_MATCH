@@ -34,6 +34,8 @@ export async function saveHistoryToFirestore(
   result: ClientRecommendationResult & { source?: string }
 ): Promise<string> {
   const normalizedEmail = userEmail ? userEmail.toLowerCase() : null;
+  if (!db) throw new Error("Firestore not initialized. Set NEXT_PUBLIC_FIREBASE_* environment variables.");
+
   const docRef = await addDoc(collection(db, "history"), {
     userId,
     userEmail,
@@ -69,6 +71,8 @@ export async function loadHistoryFromFirestore(
     return history;
   };
 
+  if (!db) return [];
+
   const uidQuery = query(
     collection(db, "history"),
     where("userId", "==", userId),
@@ -102,5 +106,6 @@ export async function loadHistoryFromFirestore(
  * Deletes a single history entry by its document ID.
  */
 export async function deleteHistoryFromFirestore(docId: string): Promise<void> {
+  if (!db) return;
   await deleteDoc(doc(db, "history", docId));
 }

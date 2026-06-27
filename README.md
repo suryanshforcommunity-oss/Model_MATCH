@@ -49,3 +49,32 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+### Recommended quick publish (Vercel)
+
+1. Create a Vercel account and connect your GitHub repository.
+2. In the Vercel dashboard, add the Environment Variables from `.env.example` (do NOT commit `.env.local`).
+3. Deploy — Vercel will build and publish your site automatically on pushes to the connected branch.
+
+### CI deploy via GitHub Actions
+
+This repository includes a GitHub Actions workflow at `.github/workflows/deploy.yml` that will trigger on pushes to `main` and call Vercel's deployment API. To use it, set these GitHub repository secrets:
+
+- `VERCEL_TOKEN` — a personal token from Vercel.
+- `VERCEL_ORG_ID` — your Vercel organization ID.
+- `VERCEL_PROJECT_ID` — your Vercel project ID.
+- `OPENAI_API_KEY` — (recommended) your OpenAI API key.
+
+Once the secrets are set, push to `main` and the workflow will deploy to production.
+
+### Manual deploy (vercel CLI)
+
+Install the Vercel CLI and deploy from your machine:
+
+```bash
+npm i -g vercel
+vercel login
+vercel --prod
+```
+
+Follow prompts to select the project and configure environment variables.
