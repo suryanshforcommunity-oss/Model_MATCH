@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import { ClientRecommendationResult, SearchOptions } from "@/lib/types";
-import { toCanvas } from 'html-to-image';
+import { toPng } from 'html-to-image';
 import { jsPDF } from "jspdf";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { WorkflowDiagram } from "@/components/WorkflowDiagram";
@@ -213,14 +213,18 @@ export default function Home() {
     if (!resultsRef.current) return;
     try {
       setIsDownloadingPdf(true);
-      const canvas = await toCanvas(resultsRef.current, {
+      
+      const width = resultsRef.current.offsetWidth;
+      const height = resultsRef.current.offsetHeight;
+      
+      const imgData = await toPng(resultsRef.current, {
         pixelRatio: 2,
         backgroundColor: '#ffffff',
       });
-      const imgData = canvas.toDataURL('image/png');
+      
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pdfHeight = (height * pdfWidth) / width;
       
       // If the content is taller than one page, jsPDF addImage handles it by scaling or we can leave it as one long page,
       // but 'a4' has fixed height. It's usually fine for 1-2 pages if we just let it crop or scale.
