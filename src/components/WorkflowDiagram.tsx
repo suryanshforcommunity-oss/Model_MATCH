@@ -26,6 +26,34 @@ const STAGE_CATEGORY_MAP: Record<string, string[]> = {
   general: ["general", "research", "writing"],
 };
 
+function calculateStageFit(tool: Tool, stageName: string, isPrimary: boolean): number {
+  if (isPrimary) {
+    // Primary recommended tool for this stage gets top tier score
+    return 93 + (tool.id.length % 5); // 93-97%
+  }
+
+  let score = 65;
+  const stageKey = stageName.toLowerCase();
+  const preferredCategories = Object.entries(STAGE_CATEGORY_MAP).find(([key]) => stageKey.includes(key))?.[1] || STAGE_CATEGORY_MAP.general;
+  
+  if (preferredCategories.includes(tool.category)) {
+    score += 20; // Strong match
+  } else if (tool.category === "general") {
+    score += 10; // Decent fallback
+  } else {
+    score -= 10; // Poor fit
+  }
+
+  if (tool.pricingType === "free") score += 4;
+  if (tool.contextLength && tool.contextLength >= 100000) score += 6;
+
+  // Add slight deterministic variation to prevent identical scores
+  const hash = tool.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  score += (hash % 7) - 3; 
+
+  return Math.min(98, Math.max(45, score));
+}
+
 function getStageOptions(stage: EnrichedWorkflowStage, recommendations: EnrichedRecommendation[]) {
   const seen = new Set<string>();
   const options: Array<{ tool: Tool; fit_score: number; reason: string; pros: string[]; cons: string[] }> = [];
@@ -36,12 +64,17 @@ function getStageOptions(stage: EnrichedWorkflowStage, recommendations: Enriched
     options.push({ tool, fit_score, reason, pros, cons });
   };
 
-  addOption(stage.tool, 95, "Primary fit for this workflow stage", [], []);
+  const primaryScore = calculateStageFit(stage.tool, stage.stage, true);
+  addOption(stage.tool, primaryScore, "Primary fit for this workflow stage", [], []);
 
   const stageKey = stage.stage.toLowerCase();
   const preferredCategories = Object.entries(STAGE_CATEGORY_MAP).find(([key]) => stageKey.includes(key))?.[1] || STAGE_CATEGORY_MAP.general;
   const hintedTools = (toolsData as Tool[]).filter((tool) => preferredCategories.includes(tool.category) && tool.id !== stage.tool.id);
-  hintedTools.forEach((tool) => addOption(tool, 88, `Good fit for ${stage.stage.toLowerCase()} work`, tool.strengths.slice(0, 2), tool.weaknesses.slice(0, 2)));
+  
+  hintedTools.forEach((tool) => {
+    const calculatedScore = calculateStageFit(tool, stage.stage, false);
+    addOption(tool, calculatedScore, `Good fit for ${stage.stage.toLowerCase()} work`, tool.strengths.slice(0, 2), tool.weaknesses.slice(0, 2));
+  });
 
   recommendations
     .filter((rec) => rec.tool.id !== stage.tool.id)
@@ -54,7 +87,8 @@ function getStageOptions(stage: EnrichedWorkflowStage, recommendations: Enriched
 
   fallbackPool.forEach((tool) => {
     if (options.length >= 5) return;
-    addOption(tool, 78, "Useful alternative when you want a different workflow style", tool.strengths.slice(0, 2), tool.weaknesses.slice(0, 2));
+    const calculatedScore = calculateStageFit(tool, stage.stage, false);
+    addOption(tool, calculatedScore, "Useful alternative when you want a different workflow style", tool.strengths.slice(0, 2), tool.weaknesses.slice(0, 2));
   });
 
   return options.slice(0, 5);
