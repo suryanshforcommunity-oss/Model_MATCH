@@ -101,7 +101,7 @@ Rules:
 - Respect user budget: if budget is "free" or "low", strongly prefer free tools.
 - Respect skill level: if beginner, avoid complex developer tools.
 - Respect timeline: if "today" or "this_week", pick tools that are quick to start.
-- Fit score 0-100 based on how well the tool matches all stated requirements.
+- Fit score 0-100 based on how well the tool matches all stated requirements. The primary best option should have a fit score between 92-98. Other options should scale realistically between 70-89 based on their tradeoffs. Do not default to 55%.
 - Generate a tailored ready-to-paste prompt per tool, reflecting the user's goal.
 - If project spans multiple phases, suggest a multi-tool workflow.
       `,

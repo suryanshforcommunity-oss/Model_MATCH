@@ -189,8 +189,11 @@ function buildReason(tool: Tool, prompt: string, options: Partial<SearchOptions>
   return `Best fit because it ${summary} and its strengths include ${strengths.toLowerCase()}.`;
 }
 
-function normalizeScore(raw: number) {
-  return Math.min(98, Math.max(55, raw));
+function normalizeScore(raw: number, maxRaw: number, index: number) {
+  if (maxRaw <= 0) return Math.min(98, Math.max(65, 85 - (index * 5)));
+  const ratio = raw / maxRaw;
+  const baseScore = Math.round(65 + (ratio * 33)); // Map to 65-98 range
+  return Math.min(98, Math.max(65, baseScore - (index * 3)));
 }
 
 export function heuristicRecommend(userPrompt: string, options: Partial<SearchOptions> = {}): ClientRecommendationResult {
@@ -256,12 +259,13 @@ export function heuristicRecommend(userPrompt: string, options: Partial<SearchOp
       budget: (budgetValue as any) || "unspecified",
       needs: [...new Set([...detectedCategories, ...(options.goal ? [options.goal.replace(/_/g, " ")] : [])].slice(0, 5))],
     },
-    recommendations: picked.map((p) => {
+    recommendations: picked.map((p, index) => {
+      const maxRaw = picked[0]?.score || 1;
       const altTool = tools.find((t) => t.category === p.tool.category && t.id !== p.tool.id);
       return {
         tool: p.tool,
         alternative_tool: altTool,
-        fit_score: normalizeScore(p.score),
+        fit_score: normalizeScore(p.score, maxRaw, index),
         reason: buildReason(p.tool, userPrompt, options, detectedCategories, p.breakdown),
         pros: p.tool.strengths,
         cons: p.tool.weaknesses,
